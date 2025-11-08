@@ -1,0 +1,75 @@
+schema {
+  query: Query
+}
+
+# Базовые скаляры
+scalar Date
+
+# Входные типы
+input PageInput {
+  # Порядковый номер первой записи (для оффсета-страничного подхода)
+  offset: Int = 0
+  # Максимальное число элементов в ответе
+  limit: Int = 50
+}
+
+# Основные сущности
+type Client {
+  id: ID!
+  name: String
+  age: Int
+
+  # Вложенные коллекции: загружаются только по запросу.
+  documents(paging: PageInput): [Document!]!
+  relatives(paging: PageInput): [Relative!]!
+}
+
+type Document {
+  id: ID!
+  type: String
+  number: String
+  issueDate: Date
+  expiryDate: Date
+}
+
+type Relative {
+  id: ID!
+  relationType: String
+  name: String
+  age: Int
+}
+
+type Query {
+  # Эквивалент GET /clients/{id}
+  client(id: ID!): Client
+  # Эквивалент GET /clients/{id}/documents
+  clientDocuments(clientId: ID!, paging: PageInput): [Document!]!
+  # Эквивалент GET /clients/{id}/relatives
+  clientRelatives(clientId: ID!, paging: PageInput): [Relative!]!
+}
+
+# ------------------------------------------------------------
+# Примеры запросов
+# ------------------------------------------------------------
+# 1) Короткая карточка клиента:
+# query ($id: ID!) {
+#   client(id: $id) { id name age }
+# }
+#
+# 2) Продажа: клиент + документы и родственники (за 1 запрос):
+# query ($id: ID!) {
+#   client(id: $id) {
+#     id
+#     name
+#     documents(paging: {limit: 5}) { id type number }
+#     relatives { id relationType name }
+#   }
+# }
+#
+# 3) Прямые аналоги REST (параллельная миграция фронта):
+# query ($id: ID!) {
+#   clientDocuments(clientId: $id) { id type number issueDate expiryDate }
+#   clientRelatives(clientId: $id) { id relationType name age }
+# }
+#
+# ------------------------------------------------------------
